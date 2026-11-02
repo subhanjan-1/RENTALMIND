@@ -1,4 +1,4 @@
-# RetailMind AI
+# RetailMind AI Project installation
 
 ## Product vision
 
