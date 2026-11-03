@@ -1,6 +1,7 @@
 # RetailMind AI Project installation
 
 ## Product vision
+#PS C:\Retail-mind\RetailMind_Project-main>
 
 RetailMind AI is an end-to-end retail intelligence platform that uses machine
 learning and AI to help businesses understand customers, predict churn, and
