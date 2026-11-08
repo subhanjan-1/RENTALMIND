@@ -1,175 +1,426 @@
-# RetailMind AI Project installation
+# RetailMind AI — Incremental Machine Learning Project
+
+RetailMind AI is an incremental retail intelligence project that explores machine learning and deep learning workflows for customer churn prediction and product-image categorisation. The project is developed in stages, with each increment adding a new model, experiment, or capability.
+
+> **Project scope:** Days 1–5 focus on tabular customer churn prediction. Day 6 introduces a separate computer-vision module for fashion product classification. The two tracks use different datasets and independent models.
+
+---
 
 ## Product vision
-#PS C:\Retail-mind\RetailMind_Project-main>
 
-RetailMind AI is an end-to-end retail intelligence platform that uses machine
-learning and AI to help businesses understand customers, predict churn, and
-improve customer retention.
+RetailMind AI aims to help businesses understand customer behaviour, identify customers at risk of leaving, and organise retail product catalogues using machine learning and AI.
 
-## Day 1 — Customer churn prediction
+The current implementation contains two modules:
+
+1. **Customer churn prediction:** analyses telecom-style customer information and predicts whether a customer may churn.
+2. **Product image classification:** uses a convolutional neural network (CNN) to classify fashion product images by their `articleType`.
+
+---
+
+## Project structure
+
+```text
+RetailMind_Project-main/
+├── data/
+│   ├── Telco-Customer-Churn.csv
+│   └── fashion-product-images-small/
+│       ├── images/
+│       └── styles.csv
+├── models/
+│   ├── churn_day1_baseline.joblib
+│   ├── churn_day2_champion.joblib
+│   ├── churn_day3_tuned.joblib
+│   ├── churn_day4_champion.joblib
+│   ├── churn_day5_ann.keras
+│   ├── churn_day5_preprocessor.joblib
+│   ├── fashion_mnist_prototype.keras
+│   ├── vision_catalog_classifier.keras
+│   ├── vision_class_names.json
+│   └── vision_confusion_matrix.csv
+├── reports/
+├── src/
+│   └── vision/
+│       ├── fashion_mnist_prototype.py
+│       ├── train_catalog_classifier.py
+│       └── predict_catalog_image.py
+├── day(1-5).ipynb
+├── README.md
+└── requirements.txt
+```
+
+Generated model files and downloaded datasets are local artifacts. Their presence depends on which experiments have been executed successfully.
+
+---
+
+# Customer churn prediction — Days 1–5
+
+## Day 1 — Customer churn prediction baseline
 
 ### Objective
 
-Build an end-to-end machine-learning pipeline to predict whether a telecom
-customer is likely to leave the company.
+Build an end-to-end machine-learning baseline to predict whether a telecom customer is likely to leave the service.
+
+This is a binary classification problem:
+
+- `0` — No Churn
+- `1` — Churn
+
+The experiment uses Logistic Regression with balanced class weights. Churn recall is important because failing to identify a customer who is likely to leave can result in a missed retention opportunity.
 
 ### Dataset
 
-Use the [Telco Customer Churn dataset on Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn).
-Download the CSV and place it at `data/telco_customer_churn.csv`. The dataset is
-not included in this repository.
+Use the Telco Customer Churn dataset from Kaggle:
+
+[Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
+
+Place the downloaded CSV in the `data/` directory. The notebook looks for:
+
+```text
+data/Telco-Customer-Churn.csv
+```
+
+It also supports:
+
+```text
+data/WA_Fn-UseC_-Telco-Customer-Churn.csv
+```
+
+The dataset contains 7,043 customer records and 21 columns. `customerID` is removed from the predictors, and `Churn` is mapped to a binary target. `TotalCharges` is converted to numeric; 11 blank or invalid values are handled by the preprocessing pipeline.
 
 ### Technologies
 
 - Python
-- Pandas
+- Pandas and NumPy
 - Scikit-learn
 - Joblib
+- Matplotlib
 
 ### Setup and execution
 
-Run these commands from the repository root:
+Run commands from the repository root. Activate the project's Python virtual environment if it is named `base`:
 
-```shell
-pip install -r requirements.txt
-python src/train.py
-python src/evaluate.py
-python src/predict.py
+```cmd
+base\Scripts\activate.bat
 ```
 
-`train.py` loads and inspects the data, cleans the target and charge columns,
-creates a stratified 80/20 split, trains the preprocessing/model pipeline, and
-saves it to `models/churn_pipeline.joblib`. `evaluate.py` trains the same fixed
-baseline and prints its held-out metrics. `predict.py` loads the Day 2 champion
-pipeline and runs a sample prediction; run `python src/model_comparison.py`
-before predicting.
+Install the required packages:
 
-The model artifact and downloaded CSV are excluded by `.gitignore`. Keep or
-publish them according to your dataset and artifact-storage policy.
+```cmd
+python -m pip install --upgrade pip
+python -m pip install numpy pandas scikit-learn joblib matplotlib jupyter
+```
+
+Launch the notebook:
+
+```cmd
+jupyter notebook
+```
+
+Open `day(1-5).ipynb` and execute cells from top to bottom.
 
 ### ML workflow
 
-1. Data ingestion and inspection
-2. Identifier removal and target/charge cleaning
-3. Numeric imputation and scaling; categorical imputation and one-hot encoding
-4. Stratified train/test split
-5. Class-balanced logistic regression training
-6. Evaluation and model persistence
-7. Prediction with the persisted preprocessing/model pipeline
+1. Load and inspect the Telco Customer Churn dataset.
+2. Convert `TotalCharges` to numeric and clean the `Churn` target.
+3. Remove `customerID` from the predictor columns.
+4. Create a stratified 80/20 train/test split using random state 42.
+5. Impute and scale numeric features.
+6. Impute and one-hot encode categorical features.
+7. Train a class-balanced Logistic Regression pipeline.
+8. Evaluate the model and save the fitted pipeline.
 
 ### Baseline model and metrics
 
-The baseline is logistic regression with `class_weight="balanced"`,
-`max_iter=1000`, a 20% stratified test split, and random state 42. Keep these
-settings fixed when comparing baseline results.
+The baseline uses `LogisticRegression(class_weight="balanced", max_iter=1000)`.
 
-| Metric | Baseline |
+| Metric | Day 1 result |
 |---|---:|
-| Accuracy | Not yet measured |
-| Precision | Not yet measured |
-| Recall | Not yet measured |
-| ROC-AUC | Not yet measured |
+| Accuracy | 73.81% |
+| Precision (Churn) | 50.43% |
+| Recall (Churn) | 78.34% |
+| F1-score | 61.36% |
+| ROC-AUC | 84.15% |
 
-After running `python src/evaluate.py` with the dataset, record the four printed
-values above. They are intentionally not estimated because no dataset was
-provided with this repository.
+Confusion matrix (`[[TN, FP], [FN, TP]]`):
 
-### Prediction service
+```text
+[[747, 288],
+ [ 81, 293]]
+```
 
-`src.predict.predict()` accepts a dictionary containing the dataset's feature
-columns (without `customerID` or `Churn`) and returns a prediction (`Churn` or
-`No Churn`) and churn probability. It reports missing or unexpected input
-features rather than silently accepting a mismatched record.
+The model detects 293 of the 374 actual churners in the test set. Its recall is useful for a first baseline, although the 288 false-positive alerts show the precision/recall trade-off.
 
-### Key concepts
+### Model artifact
 
-1. **Why `ColumnTransformer`?** It applies numeric and categorical
-   preprocessing to their respective columns within one estimator.
-2. **Why `Pipeline`?** It keeps preprocessing and the classifier together,
-   applies the same transformations at training and inference, and helps
-   prevent data leakage by fitting transformations only on training data.
-3. **Why `stratify=y`?** It preserves the churn/non-churn proportions in both
-   train and test splits.
-4. **`predict()` vs `predict_proba()`:** `predict()` returns a class label;
-   `predict_proba()` returns estimated probabilities for each class.
-5. **Why save the whole pipeline?** The persisted artifact includes both the
-   fitted preprocessing and classifier, so inference uses the same learned
-   transformations.
-6. **Why is recall important for churn?** Higher recall finds more customers
-   who may leave, reducing missed retention opportunities. It should be
-   balanced against precision and the cost of retention outreach.
+```text
+models/churn_day1_baseline.joblib
+```
+
+---
 
 ## Day 2 — Advanced churn model comparison
 
 ### Objective
 
-Compare tree-based and margin-based classifiers with the Day 1 logistic
-regression baseline, prioritizing recall for customers who churn.
+Compare Decision Tree, Random Forest, and Support Vector Machine (SVM) models against the Day 1 Logistic Regression baseline. The main selection priority is cross-validation recall for the churn class.
 
 ### Experiment configuration
 
 - Test size: 20%
 - Random state: 42
-- Stratified sampling: enabled
-- Shared numeric/categorical preprocessing and held-out test data
-- Class weights: balanced
-- Champion priority: churn recall; ROC-AUC and precision break ties
+- Stratified train/test split
+- Three-fold stratified cross-validation on the training data
+- Balanced class weights
+- Shared preprocessing pipeline
+- Champion selection priority: mean cross-validation churn recall
 
-Run the comparison from the repository root:
+### Models
 
-```shell
-python src/model_comparison.py
-python src/predict.py
-```
-
-The comparison retrains the Day 1 baseline and three Day 2 models on the same
-split, reports accuracy, precision, recall, and ROC-AUC, saves each complete
-pipeline, and writes the highest-recall pipeline to
-`models/champion_model.joblib`.
-
-### Models and artifacts
-
-| Model | Configuration | Artifact |
-|---|---|---|
-| Logistic Regression | Day 1 baseline; `class_weight="balanced"` | `models/churn_pipeline.joblib` |
-| Decision Tree | `max_depth=12`, balanced classes | `models/decision_tree.joblib` |
-| Random Forest | 200 trees, `max_depth=12`, balanced classes | `models/random_forest.joblib` |
-| SVM | RBF kernel, probability estimates, balanced classes | `models/svm.joblib` |
-| Champion | Highest recall; ROC-AUC then precision tie-breaks | `models/champion_model.joblib` |
+| Model | Configuration |
+|---|---|
+| Logistic Regression | Day 1 baseline |
+| Decision Tree | Balanced class weights |
+| Random Forest | Balanced class weights |
+| SVM | RBF kernel and balanced class weights |
 
 ### Model comparison
 
-Run `python src/model_comparison.py` with the dataset to populate these
-experiment results. Values are not estimated because the dataset is not
-included in this repository.
+| Model | Test accuracy | Test churn recall | Mean CV churn recall |
+|---|---:|---:|---:|
+| Logistic Regression | 73.81% | 78.34% | — |
+| Decision Tree | 72.82% | 48.13% | — |
+| Random Forest | 78.14% | 46.79% | — |
+| SVM | 74.38% | 77.27% | 77.93% |
 
-| Model | Accuracy | Precision | Recall | ROC-AUC |
-|---|---:|---:|---:|---:|
-| Logistic Regression (Day 1) | Not measured | Not measured | Not measured | Not measured |
-| Decision Tree | Not measured | Not measured | Not measured | Not measured |
-| Random Forest | Not measured | Not measured | Not measured | Not measured |
-| SVM | Not measured | Not measured | Not measured | Not measured |
+The SVM is selected as the Day 2 champion because it has the highest mean cross-validation recall among the Day 2 candidates. Random Forest has higher test accuracy, but lower churn recall.
 
-The champion is selected by churn-class recall. ROC-AUC and precision are used
-as tie-breakers. Accuracy alone does not determine the best model when the goal
-is to identify as many at-risk customers as possible.
+### Model artifact
 
-### Key concepts
+```text
+models/churn_day2_champion.joblib
+```
 
-- A decision tree learns non-linear decision rules.
-- A random forest combines many decision trees to improve generalization.
-- An RBF-kernel SVM can model non-linear boundaries; probability estimates are
-  enabled to calculate ROC-AUC.
-- `class_weight="balanced"` increases the influence of the less frequent class.
-- Comparing all models on the same stratified split makes the metrics
-  comparable.
+---
 
-## Future development
+## Day 3 — Hyperparameter tuning and learning curve
 
-RetailMind AI will incrementally evolve into a complete retail AI platform
-with additional machine-learning models, analytics, and deployment
-capabilities.
+### Objective
+
+Improve the classical churn models through hyperparameter tuning and inspect how model performance changes as the amount of training data increases.
+
+### Implementation
+
+1. Define parameter grids for Decision Tree, Random Forest, and SVM.
+2. Run `GridSearchCV` with three-fold stratified cross-validation.
+3. Use churn-class recall as the search scoring metric.
+4. Select the model with the highest mean cross-validation recall.
+5. Evaluate the tuned model on the same held-out test set.
+6. Calculate and plot training and cross-validation recall at increasing training-set sizes.
+
+### Tuning results
+
+| Model | Best mean CV recall |
+|---|---:|
+| SVM | 81.74% |
+| Decision Tree | 77.93% |
+| Random Forest | 72.78% |
+
+The best SVM configuration recorded in the notebook is:
+
+```python
+C=0.5
+gamma="auto"
+```
+
+### Tuned SVM test metrics
+
+| Metric | Day 3 result |
+|---|---:|
+| Accuracy | 72.39% |
+| Precision (Churn) | 48.78% |
+| Recall (Churn) | 80.48% |
+| F1-score | 60.75% |
+| ROC-AUC | 83.30% |
+
+Confusion matrix:
+
+```text
+[[719, 316],
+ [ 73, 301]]
+```
+
+The tuned SVM achieves the strongest held-out churn recall among the churn models recorded in the Days 1–5 notebook: 80.48%.
+
+### Learning curve
+
+The notebook records the following recall values for increasing training-set sizes:
+
+| Training examples | Training recall | Cross-validation recall |
+|---:|---:|---:|
+| 1,878 | 83.14% | 80.60% |
+| 2,817 | 83.22% | 81.81% |
+| 3,756 | 82.21% | 81.74% |
+
+The training and cross-validation values are relatively close for the evaluated sample sizes, suggesting no large generalisation gap in this experiment.
+
+### Generated files
+
+```text
+models/churn_day3_tuned.joblib
+reports/day3_cv_tuning_results.csv
+reports/day3_learning_curve.csv
+reports/day3_learning_curve.png
+```
+
+---
+
+## Day 4 — Feature engineering and feature selection
+
+### Objective
+
+Create additional customer-behaviour features and compare feature-selected ensemble models against the tuned Day 3 SVM.
+
+### Feature engineering
+
+The notebook adds four features:
+
+- `tenure_group`
+- `avg_charge_per_month`
+- `is_month_to_month`
+- `is_electronic_check`
+
+The feature count increases from 19 to 23 before preprocessing.
+
+### Model and feature-selection workflow
+
+1. Apply the shared numeric and categorical preprocessing.
+2. Use `SelectKBest` with `f_classif` to select the top 30 transformed features.
+3. Train Random Forest and XGBoost candidates.
+4. Compare cross-validation recall and held-out test metrics.
+5. Promote the candidate with the highest mean cross-validation recall.
+
+Feature selection is included inside the model pipeline so it is fitted within each cross-validation fold.
+
+### Day 4 model results
+
+| Model | Test accuracy | Precision | Churn recall | F1-score | ROC-AUC | Mean CV recall |
+|---|---:|---:|---:|---:|---:|---:|
+| Random Forest + SelectKBest | 77.36% | 56.69% | 62.30% | 59.36% | 82.57% | 62.54% |
+| XGBoost + SelectKBest | 79.99% | 65.75% | 51.34% | 57.66% | 84.14% | 51.71% |
+
+Random Forest is promoted as the Day 4 champion because its mean cross-validation recall (62.54%) is higher than XGBoost's (51.71%). XGBoost records the higher test accuracy and ROC-AUC, but does not detect as many churners.
+
+### Model artifact
+
+```text
+models/churn_day4_champion.joblib
+```
+
+### Generated reports
+
+```text
+reports/day4_vs_day3_comparison.csv
+```
+
+---
+
+## Day 5 — Neural-network experiments
+
+### Objective
+
+Introduce neural networks into the churn workflow, first using a small MNIST handwritten-digit warm-up and then training a dense Artificial Neural Network (ANN) on the customer churn data.
+
+### Technologies
+
+- Python
+- TensorFlow / Keras
+- NumPy
+- Scikit-learn preprocessing and evaluation
+- Matplotlib
+
+### Experiment A — MNIST warm-up
+
+A small neural network is trained on the built-in MNIST handwritten-digit dataset for three epochs.
+
+| Dataset | Epochs | Test accuracy |
+|---|---:|---:|
+| MNIST handwritten digits | 3 | 96.84% |
+
+This is a separate digit-classification warm-up. It is not a customer churn metric and is not the Fashion-MNIST experiment used in Day 6.
+
+### Experiment B — Customer churn ANN
+
+The customer data is transformed using the shared preprocessing pipeline. The 19 original input columns become 45 transformed features after numeric processing and categorical one-hot encoding.
+
+The ANN architecture uses:
+
+- Dense hidden layer with 64 units
+- Dense hidden layer with 32 units
+- Dropout regularisation
+- Sigmoid output for binary classification
+- Class weights to account for class imbalance
+- Early stopping based on validation loss
+
+Training was configured for up to 100 epochs. Early stopping ended the run after 18 epochs, with the best validation-loss epoch recorded as epoch 10.
+
+### ANN test metrics
+
+| Metric | Day 5 result |
+|---|---:|
+| Accuracy | 75.80% |
+| Precision (Churn) | 53.14% |
+| Recall (Churn) | 74.60% |
+| F1-score | 62.07% |
+| ROC-AUC | 83.95% |
+
+Confusion matrix:
+
+```text
+[[789, 246],
+ [ 95, 279]]
+```
+
+The ANN has higher test recall, F1-score, and ROC-AUC than the Day 4 Random Forest champion in this run, but lower accuracy and precision. It does not exceed the Day 3 tuned SVM's test churn recall.
+
+### Model artifacts
+
+```text
+models/churn_day5_ann.keras
+models/churn_day5_preprocessor.joblib
+```
+
+### Generated reports
+
+```text
+reports/day5_ann_loss_curve.png
+reports/day5_ann_vs_phase1_champion.csv
+reports/day5_ann_vs_phase1_champion.png
+```
+
+---
+
+## Consolidated customer churn results — Days 1–5
+
+The following table contains held-out test metrics recorded in the notebook. Mean cross-validation recall is shown separately where available.
+
+| Experiment | Accuracy | Precision | Churn recall | F1-score | ROC-AUC | Mean CV recall |
+|---|---:|---:|---:|---:|---:|---:|
+| Day 1 Logistic Regression | 73.81% | 50.43% | 78.34% | 61.36% | 84.15% | — |
+| Day 2 SVM | 74.38% | 51.15% | 77.27% | 61.55% | 82.11% | 77.93% |
+| Day 3 tuned SVM | 72.39% | 48.78% | **80.48%** | 60.75% | 83.30% | 81.74% |
+| Day 4 Random Forest + SelectKBest | 77.36% | 56.69% | 62.30% | 59.36% | 82.57% | 62.54% |
+| Day 4 XGBoost + SelectKBest | **79.99%** | **65.75%** | 51.34% | 57.66% | **84.14%** | 51.71% |
+| Day 5 Keras ANN | 75.80% | 53.14% | 74.60% | **62.07%** | 83.95% | — |
+
+### Key observations
+
+1. **Highest held-out churn recall:** Day 3 tuned SVM at 80.48%.
+2. **Highest held-out accuracy:** Day 4 XGBoost at 79.99%.
+3. **Day 4 champion:** Random Forest was promoted because its training cross-validation recall was higher than XGBoost's.
+4. **Day 5 ANN:** achieved 74.60% churn recall and 83.95% ROC-AUC.
+5. Accuracy alone does not determine the best churn model. The appropriate model depends on the business cost of missed churners, false-positive alerts, and retention outreach.
+
+---
 
 
 # RetailMind AI — Day 6: CNN Product Image Classification
