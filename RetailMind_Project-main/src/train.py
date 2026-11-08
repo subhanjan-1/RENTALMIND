@@ -60,7 +60,7 @@ def split_data(
         y,
         test_size=TEST_SIZE,
         random_state=RANDOM_STATE,
-        stratify=y,
+        stratify=y
     )
 
 

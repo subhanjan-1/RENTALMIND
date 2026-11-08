@@ -5,3 +5,7 @@ venv/
 .ipynb_checkpoints/
 # data/telco_customer_churn.csv
 models/*.joblib
+# Fashion Product Images dataset
+data/fashion-product-images-small/images/
+# Python virtual environment
+base/
