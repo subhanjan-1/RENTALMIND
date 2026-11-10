@@ -9,3 +9,5 @@ models/*.joblib
 data/fashion-product-images-small/images/
 # Python virtual environment
 base/
+
+##base\Scripts\activate.bat
