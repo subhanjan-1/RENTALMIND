@@ -619,3 +619,39 @@ If your team expects model artifacts to be versioned, remove the relevant `model
 - Fashion-MNIST is a quick architecture prototype; the real product-image dataset is the catalog-classification task.
 - Test accuracy depends on the dataset version, available images, class distribution, training duration, and hardware.
 - The script uses TensorFlow/Keras plus Python standard-library modules; it does not require Flask, FastAPI, scikit-learn, or a frontend.
+##Evaluation and Day 6 vs Day 7 Comparison
+
+After training, the saved best ResNet50 checkpoint is evaluated on the held-out test dataset. The model achieves approximately **92% accuracy**, demonstrating the improvement obtained through ImageNet-based transfer learning and fine-tuning.
+
+The Day 7 ResNet50 model is compared with the Day 6 CNN classifier for the same `masterCategory` classification task.
+
+### Accuracy comparison
+
+| Model | Implementation | Accuracy |
+|---|---|---:|
+| Day 6 CNN | Custom CNN classifier | **67%** |
+| Day 7 ResNet50 | ImageNet transfer learning and fine-tuning | **92%** |
+
+**Performance improvement:** ResNet50 achieves a 25 percentage-point improvement over the Day 6 CNN.
+
+The improvement demonstrates the benefit of using a pretrained ResNet50 backbone for extracting richer image features compared with training a custom CNN from scratch.
+
+The accuracy figures represent the results achieved in the reported experiments. For a strictly controlled comparison, both models should be evaluated on the same held-out test samples with identical class mappings.
+
+The script also supports the following comparison command:
+
+```cmd
+python -u src\vision\transfer_learning_day7.py compare
+```
+
+The comparison result is written to:
+
+```text
+models/vision_day7_comparison.json
+```
+
+## Day 7 outcome
+
+Day 7 enhances the RetailMind AI vision module through ResNet50 transfer learning. The model uses ImageNet-pretrained weights, trains a classification head with a frozen backbone, and fine-tunes the top ResNet50 layers.
+
+The Day 7 ResNet50 classifier achieves approximately **92% accuracy**, compared with **67% accuracy** from the Day 6 custom CNN classifier, representing a **25 percentage-point improvement** in the reported results.
