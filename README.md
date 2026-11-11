@@ -573,7 +573,7 @@ Day 6 was completed in two stages, using two separate datasets and two separatel
 | Experiment | Dataset | Training duration | Accuracy achieved |
 |---|---|---:|---:|
 | CNN prototype | Fashion-MNIST | As run in the prototype script | Approximately **92%** |
-| Product catalog CNN | Fashion Product Images Small | **12 epochs** | Approximately **56%** |
+| Product catalog CNN | Fashion Product Images Small | **12 epochs** | Approximately **68%** |
 
 The figures above are the results reported for this Day 6 run. The real-dataset result is an initial baseline for the catalog-classification module, not a claim that the model is production-ready. Accuracy can change with the dataset version, class balance, filtering, train/test split, random seed, and training configuration. When reporting results, identify whether the printed metric is test accuracy or validation accuracy; do not compare metrics from different splits as if they were identical.
 
