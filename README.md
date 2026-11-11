@@ -655,3 +655,184 @@ models/vision_day7_comparison.json
 Day 7 enhances the RetailMind AI vision module through ResNet50 transfer learning. The model uses ImageNet-pretrained weights, trains a classification head with a frozen backbone, and fine-tunes the top ResNet50 layers.
 
 The Day 7 ResNet50 classifier achieves approximately **92% accuracy**, compared with **67% accuracy** from the Day 6 custom CNN classifier, representing a **25 percentage-point improvement** in the reported results.
+
+# Day 9 --- LSTM-Based Demand Forecasting
+
+## Objective
+
+Build a time-series forecasting model that predicts daily sales for a
+selected Rossmann store using historical sales and calendar/business
+information.
+
+The model uses an LSTM neural network built with TensorFlow/Keras. It is
+evaluated on the latest 30 days of available data and compared with a
+simple 7-day seasonal-naive baseline.
+
+## Dataset
+
+**Dataset:** [Rossmann Store Sales ---
+Kaggle](https://www.kaggle.com/competitions/rossmann-store-sales/data)
+
+Download the competition data and place `train.csv` at:
+
+``` text
+data/
+└── rossmann-store-sales/
+    └── train.csv
+```
+
+The script reads these columns from `train.csv`:
+
+-   `Store`
+-   `Date`
+-   `Sales`
+-   `Promo`
+-   `StateHoliday`
+-   `SchoolHoliday`
+-   `Open` (used when available)
+
+The script trains on one store at a time. The default store is `1`.
+
+## Methodology
+
+### 1. Data preparation
+
+-   Filter the dataset for the selected store.
+-   Sort records by date and create a daily time series.
+-   Fill missing daily records with zero sales and default feature
+    values.
+-   Apply `log1p` to sales to reduce the effect of unusually large
+    values.
+-   Encode state holidays and create sine/cosine features for the day of
+    the week.
+
+### 2. Input features
+
+The model uses the following information:
+
+  Feature                   Purpose
+  ------------------------- -------------------------------
+  Historical log sales      Recent sales trend
+  Promo                     Whether a promotion is active
+  StateHoliday              State holiday category
+  SchoolHoliday             School holiday indicator
+  Open                      Whether the store is open
+  Day-of-week sine/cosine   Weekly calendar pattern
+
+The model uses the previous **28 days** to predict the next day's sales.
+
+### 3. Train/test split and scaling
+
+-   The latest **30 days** are held out for testing.
+-   Earlier observations are used for training.
+-   Feature and target scaling statistics are calculated from training
+    data only.
+-   Training sequences preserve chronological order; shuffling is
+    disabled.
+
+### 4. LSTM architecture
+
+The network contains:
+
+1.  LSTM layer with 64 units and sequence output.
+2.  Dropout layer (0.2).
+3.  LSTM layer with 32 units.
+4.  Dropout layer (0.2).
+5.  Dense layer with 16 ReLU units.
+6.  Dense output layer for the next-day forecast.
+
+Training uses the Adam optimizer and Huber loss. Early stopping restores
+the best validation weights, while ReduceLROnPlateau lowers the learning
+rate when validation loss stops improving.
+
+## Evaluation
+
+The script reports:
+
+-   **MAE:** Mean Absolute Error, in sales units.
+-   **RMSE:** Root Mean Squared Error, in sales units.
+-   **MAPE:** Mean Absolute Percentage Error, calculated only for test
+    days with non-zero actual sales.
+-   **7-day baseline MAE/RMSE:** Error from predicting each test day
+    using the sales value from seven days earlier.
+
+### Day 9 results — Store 1
+
+The following metrics were obtained from the latest 30-day test period:
+
+| Metric | LSTM | 7-day seasonal baseline |
+|---|---:|---:|
+| MAE | **469.12** | 1,012.33 |
+| RMSE | **672.18** | 1,169.59 |
+| MAPE | **11.89%** | Not calculated |
+
+Compared with the 7-day seasonal baseline, the LSTM reduced **MAE by 53.66%** and **RMSE by 42.53%**. Lower errors indicate better forecasting performance on this held-out period. The MAPE value represents an average absolute percentage error of 11.89% on test days with non-zero sales; it should not be described as classification accuracy.
+
+These are observed results for Store 1 and this particular test period, not guaranteed performance across all Rossmann stores.
+
+## Requirements
+
+-   Python 3.9 or later (use a TensorFlow-supported Python version)
+-   pandas
+-   NumPy
+-   TensorFlow
+
+Install dependencies:
+
+``` powershell
+python -m pip install pandas numpy tensorflow
+```
+
+## How to run
+
+Run from the repository root:
+
+``` powershell
+python -u .\src\forecasting_LSTM.py
+```
+
+Or, if the terminal is already inside `src`:
+
+``` powershell
+python -u .\forecasting_LSTM.py
+```
+
+To change the store, edit `STORE_ID` near the top of
+`forecasting_LSTM.py`. You can also adjust `LOOK_BACK`, `TEST_DAYS`, and
+`EPOCHS` there.
+
+## Saved model
+
+After training, the model is saved to:
+
+``` text
+models/day9_lstm.keras
+```
+
+The script also prints the test metrics and baseline metrics in the
+terminal.
+
+## Project structure
+
+``` text
+RetailMind_Project-main/
+├── data/
+│   └── rossmann-store-sales/
+│       └── train.csv
+├── models/
+│   └── day9_lstm.keras          # generated after training
+└── src/
+    └── forecasting_LSTM.py
+```
+
+## Limitations
+
+-   This is a **store-level daily sales** forecast, not an individual
+    product/SKU forecast.
+-   The current script trains for one store per run.
+-   Future promotion and holiday features must be known or supplied for
+    the forecast period.
+-   A 30-day holdout on one store is a limited evaluation; results may
+    differ across stores and time periods.
+-   MAPE can be unstable for small actual sales values and is excluded
+    when actual sales are zero.
